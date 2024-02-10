@@ -144,8 +144,15 @@ $EventDataHST = @('')
 foreach($SQLServer in $EventDatabasesInfo){
     If($SQLServer){
         Write-Host "SQL Server Name - $($SQLServer.server_name)"
-        # Define SQL Query
-        $SQLQueryHST = "SELECT * from $($SQLServer.database_name).event_historical where (EventType = 'AGENT_CONNECTED') and (Time > '$TimeBack') order by time desc"
+        If($Sqlserver.table_prefix){
+            Write-Host "SQL Server has Table Prefix - $($SQLServer.table_prefix)"
+            $Prefix = "dbo." + $($SQLServer.table_prefix)
+            # Define SQL Query with Table Prefix
+            $SQLQueryHST = "SELECT * from $($SQLServer.database_name).$($Prefix)event_historical where (EventType = 'AGENT_CONNECTED') and (Time > '$TimeBack') order by time desc"
+        }else{
+            # Define SQL Query
+            $SQLQueryHST = "SELECT * from $($SQLServer.database_name).event_historical where (EventType = 'AGENT_CONNECTED') and (Time > '$TimeBack') order by time desc"
+        }
 
         Write-Host "Processing $($SQLServer.server_name) for Historical Events" -ForegroundColor Green
         $EventsHST += Invoke-Sqlcmd -Credential $SQLCreds -ServerInstance $($SQLServer.server_name) -Database $($SQLServer.database_name) -Query $SQLQueryHST -TrustServerCertificate | Select-Object ModuleAndEventText, Time, Node, DesktopId
